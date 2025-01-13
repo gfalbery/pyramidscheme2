@@ -1,26 +1,35 @@
 
 # 0_Greg Script ####
 
+rm(list = ls())
+
 library(tidyverse); library(magrittr); library(ggregplot); library(cowplot); library(colorspace)
-library(GGally); library(patchwork); library(dplyr); library(beepr); library(sf)
+library(GGally); library(patchwork); library(dplyr); library(beepr); library(sf); library(fs)
+
+dir_create("Output")
 
 theme_set(theme_cowplot())
 
 DF_all <- readRDS("Data/CleanData.rds")
+
 DF_all$Age_cat <- as.factor(DF_all$Age_cat)
 
 mcw <- readRDS("Data/mcw2012.Rds")
 
-DF_temp <- merge(DF_all, mcw, by=c("Nestbox","Year.s"), all.x=TRUE)
+DF_temp <- merge(DF_all, 
+                 mcw, 
+                 by = c("Nestbox","Year.s"), 
+                 all.x = TRUE)
 
-DF_temp %>% mutate(Mean.chick.weight = coalesce(Mean.chick.weight.x, Mean.chick.weight.y)) -> DF_temp
+DF_temp %>% 
+  mutate(Mean.chick.weight = coalesce(Mean.chick.weight.x, Mean.chick.weight.y)) -> 
+  DF_temp
 
 DF_all <- DF_temp
 
 WoodOutline <- st_read("woodoutlinefiles")
 
 WoodOutline %<>% slice(1)
-
 
 Resps <- c("April.lay.date",
            "Binary.succ",
@@ -56,7 +65,7 @@ IMList <- list()
 
 Resps %<>% sort
 
-####FEMALE####
+# FEMALE ####
 
 # DF <- DF_all[which(DF_all$Focal.sex == "F"),]
 
@@ -153,28 +162,31 @@ for(r in r:length(Resps)){
 
 IMListF <- IMList
 
+IMListF %>% saveRDS("Output/FemaleModels.rds")
+
+library(patchwork)
+
 female <- IMListF %>% map(c("Model1", "FinalModel")) %>% 
-  Efxplot(ModelNames = Resps, PointOutline = T, Intercept = F, Size = 3) +
-  scale_colour_brewer(palette = "Set1") +
+  Efxplot(ModelNames = Resps, PointOutline = T, Intercept = F, PointSize = 3) +
+  # scale_colour_brewer(palette = "Set1") +
+  scale_colour_brewer(palette = "Spectral") +
   guides(color = guide_legend(reverse = T)) +
   IMListF %>% map(c("Model1", "Spatial", "Model")) %>% 
-  Efxplot(ModelNames = Resps, PointOutline = T, Intercept = F, Size = 3) +
-  scale_colour_brewer(palette = "Set1") +
+  Efxplot(ModelNames = Resps, PointOutline = T, Intercept = F, PointSize = 3) +
+  scale_colour_brewer(palette = "Spectral") +
   guides(color = guide_legend(reverse = T)) +
   plot_layout(guides = "collect")
 
+IMListF %>% map(~list(.x$Model1$FinalModel, .x$Model1$Spatial$Model) %>% INLADICFig) %>% ArrangeCowplot()
 
-IMListF %>% map(~list(.x$FinalModel, .x$Spatial$Model) %>% INLADICFig) %>% ArrangeCowplot()
+IMListF %>% names %>% 
+  map(~ggField(IMListF[[.x]]$Model1$Spatial$Model, IMListF[[.x]]$Model1$Spatial$Mesh) + 
+        labs(fill = .x) +
+        geom_sf(data = WoodOutline, inherit.aes = F, fill = NA, colour = "black") +
+        scale_fill_discrete_sequential(palette = "SunsetDark")) %>% 
+  ArrangeCowplot()
 
-  
-  IMListF %>% names %>% 
-    map(~ggField(IMListF[[.x]]$Model1$Spatial$Model, IMListF[[.x]]$Model1$Spatial$Mesh) + 
-          labs(fill = .x) +
-          geom_sf(data = WoodOutline, inherit.aes = F, fill = NA, colour = "black") +
-          scale_fill_discrete_sequential(palette = "SunsetDark")) %>% 
-    ArrangeCowplot()
-  
-###MALE####
+# MALE ####
 
 # DF <- DF_all[which(DF_all$Focal.sex == "M"),]
 
@@ -268,13 +280,15 @@ for(r in r:length(Resps)){
 
 IMListM <- IMList
 
+IMListM %>% saveRDS("Output/MaleModels.rds")
+
 male <- IMListM %>% map(c("Model1", "FinalModel")) %>% 
   Efxplot(ModelNames = Resps, PointOutline = T, Intercept = F, Size = 3) +
-  scale_colour_brewer(palette = "Set1") +
+  scale_colour_brewer(palette = "Spectral") +
   guides(color = guide_legend(reverse = T)) +
   IMListM %>% map(c("Model1", "Spatial", "Model")) %>% 
   Efxplot(ModelNames = Resps, PointOutline = T, Intercept = F, Size = 3) +
-  scale_colour_brewer(palette = "Set1") +
+  scale_colour_brewer(palette = "Spectral") +
   guides(color = guide_legend(reverse = T)) +
   plot_layout(guides = "collect")
 
@@ -290,7 +304,8 @@ IMListM %>% names %>%
   ArrangeCowplot() 
 
 
-####only non-social ####
+# only non-social ####
+
 Resps <- c("April.lay.date",
            "Binary.succ",
            "Clutch.size",
@@ -308,7 +323,7 @@ IMListF %>% map(c("Model1", "FinalModel")) %>%
   ) +
   scale_x_discrete(limits = rev(c("Intercept", "Age_catjuvenile", "Year.w2012", 
                                   "Year.w2013", "Largeoaks", "Bondstrength", "Degree", 
-                                   "AnnualDensity", "Spatial.assoc", "N.avg.male.bs")[-c(1,6:11)]),
+                                  "AnnualDensity", "Spatial.assoc", "N.avg.male.bs")[-c(1,6:11)]),
                    labels = rev(c("Intercept", "Age (juv vs. adult)", "Year2012",  
                                   "Year2013", "Habitat quality", "Pair bond strength", "Degree", "Density",
                                   "Spatial associations", 
@@ -318,7 +333,8 @@ IMListF %>% map(c("Model1", "FinalModel")) %>%
   guides(color = guide_legend(reverse = T)) +
   ggtitle("Non-social effects")
 
-####only non-social with spatial ####
+# only non-social with spatial ####
+
 Resps <- c("April.lay.date",
            "Binary.succ",
            "Clutch.size",
@@ -346,7 +362,8 @@ IMListF %>% map(c("Model1", "Spatial", "Model")) %>%
   guides(color = guide_legend(reverse = T)) +
   ggtitle("Non-social effects")
 
-####only social ####
+# only social ####
+
 IMListF %>% map(c("Model1", "FinalModel")) %>% 
   Efxplot(Intercept = F, Size = 3, PointOutline = T, 
           ModelNames = Resps %>%
@@ -396,7 +413,8 @@ IMListF %>% map(c("Model1", "FinalModel")) %>%
   plot_layout(guides = "collect")
 
 
-####only social with SPDE####
+# only social with SPDE ####
+
 IMListF %>% map(c("Model1", "Spatial","Model")) %>% 
   Efxplot(Intercept = F, Size = 3, PointOutline = T, 
           ModelNames = Resps %>%
@@ -450,12 +468,12 @@ IMListF %>% map(c("Model1", "Spatial","Model")) %>%
 
 library(rgeos)
 library(rgdal)
+
 wyt <- readOGR("woodoutlinefiles","perimeter poly with clearings_region")
 poly.sp <- SpatialPolygons(list(wyt@polygons[[1]]))
 m.bound <- poly.sp@polygons[[1]]@Polygons[[1]]@coords
 boxout <- gEnvelope(wyt)
 wytdiff <- gDifference(boxout, wyt)
-
 
 ggField(IMListF[["April.lay.date"]][["Model1"]][["Spatial"]][["Model"]], IMListF[["April.lay.date"]][["Model1"]][["Spatial"]][["Mesh"]]) + 
   theme_void() +
@@ -463,8 +481,6 @@ ggField(IMListF[["April.lay.date"]][["Model1"]][["Spatial"]][["Model"]], IMListF
   geom_sf(data = WoodOutline, inherit.aes = F, fill = NA, colour = "black") +
   scale_fill_discrete_sequential(palette = "Blues", rev=FALSE) + 
   geom_polygon(data=wytdiff, fill="white", aes(x=long, y=lat, group=group))
-
-
 
 ggField(IMListF[["Binary.succ"]][["Model1"]][["Spatial"]][["Model"]], IMListF[["Binary.succ"]][["Model1"]][["Spatial"]][["Mesh"]]) + 
   theme_void() +
@@ -487,12 +503,17 @@ ggField(IMListF[["Mean.chick.weight"]][["Model1"]][["Spatial"]][["Model"]], IMLi
   scale_fill_discrete_sequential(palette = "Blues") + 
   geom_polygon(data=wytdiff, fill="white", aes(x=long, y=lat, group=group))
 
-ggField(IMListF[["Num.fledglings"]][["Model1"]][["Spatial"]][["Model"]], IMListF[["Num.fledglings"]][["Model1"]][["Spatial"]][["Mesh"]]) + 
+ggField(IMListF[["Num.fledglings"]][["Model1"]][["Spatial"]][["Model"]], 
+        IMListF[["Num.fledglings"]][["Model1"]][["Spatial"]][["Mesh"]]) + 
   theme_void() +
-  labs(fill="Number of fledglings") +  
+  labs(fill = "Number of fledglings") +  
   geom_sf(data = WoodOutline, inherit.aes = F, fill = NA, colour = "black") +
   scale_fill_discrete_sequential(palette = "Blues") + 
-  geom_polygon(data=wytdiff, fill="white", aes(x=long, y=lat, group=group))
+  geom_polygon(data = wytdiff, 
+               fill="white", 
+               aes(x = long, 
+                   y = lat, 
+                   group = group))
 
 
 #### exporting outputs ####
@@ -513,7 +534,7 @@ femaleDIC <- IMListF %>%
   bind_rows(.id = "Response") %>% 
   mutate(DeltaDIC = SPDE - Base)
 
-#female####
+# female ####
 
 IMListF %>% 
   map(function(a){
@@ -595,9 +616,7 @@ x <- femalemodeloutputspatial$Num.fledglings
 x <- xtable::xtable(x)
 xtable::print.xtable(x, type="html", file="f.nf.s.html")
 
-###male#### 
-
-
+### male #### 
 
 IMListM %>% 
   map(function(a){
@@ -765,7 +784,7 @@ laycontrolList[["Num.fledglings"]][["Model1"]][["FinalModel"]]%>%
   ) +
   scale_x_discrete(limits = rev(c("Intercept", "Age_num", "Age_catjuvenile", "Year.w2012", 
                                   "Year.w2013", "Largeoaks", "April.lay.date", "Degree", 
-                                   "N.avg.male.bs")[-c(1,4:5)]),
+                                  "N.avg.male.bs")[-c(1,4:5)]),
                    labels = rev(c("Intercept", "Age (numeric)", "Age (juv vs. adult)", "Year2012",  
                                   "Year2013", "Habitat quality", "Lay date", "Degree", 
                                   "Male N bond strength")[-c(1,4:5)])
@@ -1078,7 +1097,7 @@ female <- IMListF.fam %>% map(c("Model1", "FinalModel")) %>%
   guides(color = guide_legend(reverse = T)) +
   plot_layout(guides = "collect")
 
-###MALE####
+### MALE ####
 
 # DF <- DF_all[which(DF_all$Focal.sex == "M"),]
 

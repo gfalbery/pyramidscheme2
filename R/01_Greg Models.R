@@ -164,16 +164,16 @@ IMListF <- IMList
 
 IMListF %>% saveRDS("Output/FemaleModels.rds")
 
-library(patchwork)
+# Female Plots ####
 
 female <- IMListF %>% map(c("Model1", "FinalModel")) %>% 
   Efxplot(ModelNames = Resps, PointOutline = T, Intercept = F, PointSize = 3) +
   # scale_colour_brewer(palette = "Set1") +
-  scale_colour_brewer(palette = "Spectral") +
+  scale_colour_brewer(palette = "Set1") +
   guides(color = guide_legend(reverse = T)) +
   IMListF %>% map(c("Model1", "Spatial", "Model")) %>% 
   Efxplot(ModelNames = Resps, PointOutline = T, Intercept = F, PointSize = 3) +
-  scale_colour_brewer(palette = "Spectral") +
+  scale_colour_brewer(palette = "Set1") +
   guides(color = guide_legend(reverse = T)) +
   plot_layout(guides = "collect")
 
@@ -282,13 +282,17 @@ IMListM <- IMList
 
 IMListM %>% saveRDS("Output/MaleModels.rds")
 
+
+
+# Male Plots ####
+
 male <- IMListM %>% map(c("Model1", "FinalModel")) %>% 
   Efxplot(ModelNames = Resps, PointOutline = T, Intercept = F, Size = 3) +
-  scale_colour_brewer(palette = "Spectral") +
+  scale_colour_brewer(palette = "Set1") +
   guides(color = guide_legend(reverse = T)) +
   IMListM %>% map(c("Model1", "Spatial", "Model")) %>% 
   Efxplot(ModelNames = Resps, PointOutline = T, Intercept = F, Size = 3) +
-  scale_colour_brewer(palette = "Spectral") +
+  scale_colour_brewer(palette = "Set1") +
   guides(color = guide_legend(reverse = T)) +
   plot_layout(guides = "collect")
 
@@ -303,6 +307,7 @@ IMListM %>% names %>%
         scale_fill_discrete_sequential(palette = "SunsetDark")) %>% 
   ArrangeCowplot() 
 
+# Everything below is plots ####
 
 # only non-social ####
 
@@ -358,7 +363,7 @@ IMListF %>% map(c("Model1", "Spatial", "Model")) %>%
                                   "Spatial associations", 
                                   "Male N bond strength")[-c(1,6:11)])
   ) +
-  scale_color_brewer(palette="Spectral") + 
+  scale_color_brewer(palette="Set1") + 
   guides(color = guide_legend(reverse = T)) +
   ggtitle("Non-social effects")
 
@@ -432,14 +437,14 @@ IMListF %>% map(c("Model1", "Spatial","Model")) %>%
                                   "Spatial associations", 
                                   "Male N bond strength")[-c(1:5)])
   ) +
-  scale_color_brewer(palette="Spectral") + 
+  scale_color_brewer(palette = "Set1") + 
   guides(color = guide_legend(reverse = T)) +
   ylim(c(-.5,.5)) + 
   
   ggtitle("Female") +
   
   IMListM %>% map(c("Model1", "Spatial", "Model")) %>% 
-  Efxplot(Intercept = F, Size = 3, PointOutline = T, 
+  Efxplot(Intercept = F, PointSize = 3, PointOutline = T, 
           ModelNames = Resps %>%
             str_replace_all(c("April.lay.date" = "Lay date",
                               "Binary.succ" = "Binary success",
@@ -455,7 +460,7 @@ IMListF %>% map(c("Model1", "Spatial","Model")) %>%
                                   "Spatial associations", 
                                   "Male N bond strength")[-c(1:5)])
   ) + 
-  scale_color_brewer(palette= "Spectral") + 
+  scale_color_brewer(palette= "Set1") + 
   guides(color = guide_legend(reverse = T)) +
   ylim(c(-.5,.5)) + 
   
@@ -464,10 +469,13 @@ IMListF %>% map(c("Model1", "Spatial","Model")) %>%
   plot_layout(guides = "collect")
 
 
-####Map figures####
+# Map figures ####
+
+brewer.pal(5, "Spectral")[1]
 
 library(rgeos)
 library(rgdal)
+library(RColorBrewer)
 
 wyt <- readOGR("woodoutlinefiles","perimeter poly with clearings_region")
 poly.sp <- SpatialPolygons(list(wyt@polygons[[1]]))
@@ -475,48 +483,85 @@ m.bound <- poly.sp@polygons[[1]]@Polygons[[1]]@coords
 boxout <- gEnvelope(wyt)
 wytdiff <- gDifference(boxout, wyt)
 
-ggField(IMListF[["April.lay.date"]][["Model1"]][["Spatial"]][["Model"]], IMListF[["April.lay.date"]][["Model1"]][["Spatial"]][["Mesh"]]) + 
+ggField(IMListF[["April.lay.date"]][["Model1"]][["Spatial"]][["Model"]], 
+        IMListF[["April.lay.date"]][["Model1"]][["Spatial"]][["Mesh"]],
+        # Boundary = wytdiff,
+        Fill = "Continuous") + 
   theme_void() +
   labs(fill="April lay date") +  
   geom_sf(data = WoodOutline, inherit.aes = F, fill = NA, colour = "black") +
-  scale_fill_discrete_sequential(palette = "Blues", rev=FALSE) + 
-  geom_polygon(data=wytdiff, fill="white", aes(x=long, y=lat, group=group))
+  # scale_fill_discrete_sequential(palette = "Blues", rev=FALSE) + 
+  scale_fill_continuous(low = "white", high = 
+                          brewer.pal(5, "Set1")[1]) +
+  geom_contour(aes(z = Fill), colour = "white", lty = 2, alpha = 0.4) +
+  # geom_contour_label(aes(z = Fill), colour = "white", lty = 2, alpha = 0.4) +
+# geom_polygon(data = wytdiff, 
+  #              fill = "white", 
+  #              aes(x = long, 
+  #                  y = lat, 
+  #                  group = group))
+  NULL +
 
-ggField(IMListF[["Binary.succ"]][["Model1"]][["Spatial"]][["Model"]], IMListF[["Binary.succ"]][["Model1"]][["Spatial"]][["Mesh"]]) + 
-  theme_void() +
-  labs(fill="Binary success") +  
-  geom_sf(data = WoodOutline, inherit.aes = F, fill = NA, colour = "black") +
-  scale_fill_discrete_sequential(palette = "Blues") + 
-  geom_polygon(data=wytdiff, fill="white", aes(x=long, y=lat, group=group))
+# ggField(IMListF[["Binary.succ"]][["Model1"]][["Spatial"]][["Model"]], 
+#         IMListF[["Binary.succ"]][["Model1"]][["Spatial"]][["Mesh"]],
+#         Fill = "Continuous") + 
+#   theme_void() +
+#   labs(fill="Binary success") +  
+#   geom_sf(data = WoodOutline, inherit.aes = F, fill = NA, colour = "black") +
+#   # scale_fill_discrete_sequential(palette = "Blues") + 
+#   scale_fill_continuous(low = "white", high = 
+#                           brewer.pal(5, "Set1")[4]) +
+#   geom_contour(aes(z = Fill), colour = "white", lty = 2, alpha = 0.4) +
+#   # geom_polygon(data = wytdiff, fill="white", aes(x=long, y=lat, group group))
+  NULL +
 
-ggField(IMListF[["Clutch.size"]][["Model1"]][["Spatial"]][["Model"]], IMListF[["Clutch.size"]][["Model1"]][["Spatial"]][["Mesh"]]) + 
+ggField(IMListF[["Clutch.size"]][["Model1"]][["Spatial"]][["Model"]], 
+        IMListF[["Clutch.size"]][["Model1"]][["Spatial"]][["Mesh"]],
+        Fill = "Continuous") + 
   theme_void() +
   labs(fill="Clutch size") +  
   geom_sf(data = WoodOutline, inherit.aes = F, fill = NA, colour = "black") +
-  scale_fill_discrete_sequential(palette = "Blues") + 
-  geom_polygon(data=wytdiff, fill="white", aes(x=long, y=lat, group=group))
+  # scale_fill_discrete_sequential(palette = "Blues") + 
+  scale_fill_continuous(low = "white", high = 
+                          brewer.pal(5, "Set1")[3]) +
+  geom_contour(aes(z = Fill), colour = "white", lty = 2, alpha = 0.4) +
+  # geom_polygon(data=wytdiff, fill="white", aes(x=long, y=lat, group=group)) +
+  NULL +
 
-ggField(IMListF[["Mean.chick.weight"]][["Model1"]][["Spatial"]][["Model"]], IMListF[["Mean.chick.weight"]][["Model1"]][["Spatial"]][["Mesh"]]) + 
+ggField(IMListF[["Mean.chick.weight"]][["Model1"]][["Spatial"]][["Model"]], 
+        IMListF[["Mean.chick.weight"]][["Model1"]][["Spatial"]][["Mesh"]],
+        Fill = "Continuous") + 
   theme_void() +
   labs(fill="Mean chick weight") +  
   geom_sf(data = WoodOutline, inherit.aes = F, fill = NA, colour = "black") +
   scale_fill_discrete_sequential(palette = "Blues") + 
-  geom_polygon(data=wytdiff, fill="white", aes(x=long, y=lat, group=group))
+  scale_fill_continuous(low = "white", high = 
+                          brewer.pal(5, "Set1")[4]) +
+  geom_contour(aes(z = Fill), colour = "white", lty = 2, alpha = 0.4) +
+  # geom_polygon(data=wytdiff, fill="white", aes(x=long, y=lat, group=group)) +
+  NULL +
 
 ggField(IMListF[["Num.fledglings"]][["Model1"]][["Spatial"]][["Model"]], 
-        IMListF[["Num.fledglings"]][["Model1"]][["Spatial"]][["Mesh"]]) + 
+        IMListF[["Num.fledglings"]][["Model1"]][["Spatial"]][["Mesh"]],
+        Fill = "Continuous") + 
   theme_void() +
   labs(fill = "Number of fledglings") +  
   geom_sf(data = WoodOutline, inherit.aes = F, fill = NA, colour = "black") +
   scale_fill_discrete_sequential(palette = "Blues") + 
-  geom_polygon(data = wytdiff, 
-               fill="white", 
-               aes(x = long, 
-                   y = lat, 
-                   group = group))
+  scale_fill_continuous(low = "white", high = 
+                          brewer.pal(5, "Set1")[5]) +
+  geom_contour(aes(z = Fill), colour = "white", lty = 2, alpha = 0.4) +
+  # geom_polygon(data = wytdiff, 
+  #              fill="white", 
+  #              aes(x = long, 
+  #                  y = lat, 
+  #                  group = group)) +
+  NULL +
+  plot_layout(nrow = 2) +
+  plot_annotation(tag_levels = "A")
 
 
-#### exporting outputs ####
+# exporting outputs ####
 
 ##DIC change 
 
@@ -546,7 +591,7 @@ IMListF %>%
         rename(Variable = rowname)
       
     }) %>% bind_rows(.id = "Model1") %>% 
-      select(Model1, 
+      dplyr::select(Model1, 
              Variable,
              Estimate = mean,
              Lower = `0.025quant`,
@@ -586,7 +631,7 @@ IMListF %>%
         rename(Variable = rowname)
       
     }) %>% bind_rows(.id = "Sex") %>% 
-      select(Sex, 
+      dplyr::select(Sex, 
              Variable,
              Estimate = mean,
              Lower = `0.025quant`,
@@ -704,6 +749,7 @@ xtable::print.xtable(x, type="html", file="m.nf.s.html")
 
 
 #### quick number of fledglings accounting for laydate #### 
+
 Resps <- "Num.fledglings"
 
 Covar <- c("Age_num", "Age_cat", "Year.w", "Largeoaks", "April.lay.date", "Degree", "N.avg.male.bs")
@@ -951,7 +997,8 @@ SpocialList %>% map("FinalModel") %>% Efxplot(ModelNames = SocialCovar) +
   plot_layout(guides = "collect")
 
 
-###with previous year familiarity #### 
+# with previous year familiarity #### 
+
 DF.fam <- readRDS("Data/fn2.data.withfam.Rds")
 DF.fam$Age_cat <- as.factor(DF.fam$Age_cat)
 
@@ -990,7 +1037,7 @@ IMList <- list()
 
 Resps %<>% sort
 
-####FEMALE####
+# FEMALE ####
 
 # DF <- DF_all[which(DF_all$Focal.sex == "F"),]
 
@@ -1097,7 +1144,7 @@ female <- IMListF.fam %>% map(c("Model1", "FinalModel")) %>%
   guides(color = guide_legend(reverse = T)) +
   plot_layout(guides = "collect")
 
-### MALE ####
+# MALE ####
 
 # DF <- DF_all[which(DF_all$Focal.sex == "M"),]
 
@@ -1191,13 +1238,15 @@ for(r in r:length(Resps)){
 
 IMListM.fam <- IMList
 
-##cor plot social 
+# cor plot social 
+
 social <- DF_all %>% 
   dplyr::select(Strength_mean, Degree, Bondstrength, N.avg.bs, N.avg.male.bs, N.avg.female.bs, Spatial.assoc, LifetimeDensity, AnnualDensity)
 
 socialm <-  cor(social, method="pearson", use="complete.obs")
 
 library(corrplot)
+
 corrplot(socialm, type = "upper", order = "hclust", 
          tl.col = "black", tl.srt = 45)  
 

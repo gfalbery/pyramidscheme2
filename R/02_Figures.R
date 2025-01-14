@@ -254,6 +254,23 @@ IMListF %>% map(c("Model1", "Spatial","Model")) %>%
 
 ggsave("Figures/Figure4.jpeg", units = "mm", height = 180, width = 220)
 
+# Supplementary Figure 1? Correlation plot ####
+
+# cor plot social 
+
+social <- DF_all %>% 
+  dplyr::select(Strength_mean, Degree, Bondstrength, 
+                N.avg.bs, N.avg.male.bs, N.avg.female.bs, 
+                Spatial.assoc, LifetimeDensity, AnnualDensity)
+
+socialm <-  cor(social, method="pearson", use="complete.obs")
+
+library(corrplot)
+
+corrplot(socialm, 
+         type = "upper", 
+         order = "hclust", 
+         tl.col = "black", tl.srt = 45)  
 
 # Supplementary Figure 2: Social effects without spatial ####
 

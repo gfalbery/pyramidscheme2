@@ -272,6 +272,10 @@ corrplot(socialm,
          order = "hclust", 
          tl.col = "black", tl.srt = 45)  
 
+ggsave("Figures/SupplementaryFigure1.jpeg", 
+       units = "mm", 
+       height = 180, width = 180)
+
 # Supplementary Figure 2: Social effects without spatial ####
 
 IMListF %>% map(c("Model1", "FinalModel")) %>% 
